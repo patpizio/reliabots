@@ -63,7 +63,66 @@ class ConformalPredictor():  # By default a Mondrian CP, for now
 	def top_low_credibility(self, n=10):
 		return np.argsort(np.max(self.p_values, axis=1))[:n]
 
-	def plot_validity(self):
+	def plot_validity(self, labelwise=False):  # TODO: granularity;
+		significance = []
+		error_rates = []
+		pd_labels = []
+
+		if labelwise:
+			labels = self.labels
+		else:
+			labels = ['all']
+		
+		for label in labels:	
+			for i in range(0, 101, 2):
+				eps = i/100
+				significance.append(eps)
+				if labelwise:
+					regions = self.p_values[self.y_test==label, :] > eps
+					true_label_not_present = np.invert(regions[np.arange(len(regions)), self.y_test[self.y_test==label]]) 
+					error_rate = np.sum(true_label_not_present) / len(self.y_test[self.y_test==label])
+				else:
+					regions = self.p_values > eps
+					true_label_not_present = np.invert(regions[np.arange(len(regions)), self.y_test]) 
+					error_rate = np.sum(true_label_not_present) / len(self.y_test)
+				error_rates.append(error_rate)
+				pd_labels.append(str(label))
+
+		df = pd.DataFrame({'significance':significance, 'error rate':error_rates, 'label':pd_labels})
+
+		fig = px.scatter(df, x='significance', y='error rate', color='label', width=500, height=400,  # 700, 500
+			template='none',
+			color_discrete_sequence=px.colors.qualitative.T10
+		)
+		fig.add_trace(
+			go.Scatter(x=significance,
+				y=significance,
+				opacity=0.2,
+				line=dict(
+					color='gray',
+					dash='dash'
+					),
+				showlegend=False
+				)
+		)
+		fig.update_layout(
+			legend=dict(
+			    yanchor="top",
+			    y=0.94,
+			    xanchor="left",
+			    x=0.1),
+			# font_family='Officina Sans ITC Book'
+		)
+		fig.update_xaxes(nticks=10)
+
+		# fig = sns.scatterplot(data=df, x='significance', y='error rate', hue='label')
+
+		return fig
+
+
+
+
+	def old_plot_validity(self):
 		error_rates = []
 		significance = []
 		sizes = []
