@@ -7,7 +7,7 @@ import seaborn as sns
 import pandas as pd
 
 
-class ConformalPredictor():  # By default a Mondrian CP, for now
+class ConformalPredictor():
 
 	def __init__(self, y_cal_proba, y_cal, y_test_proba, y_test, labels, mondrian=True):
 		self.y_cal_proba = y_cal_proba
@@ -15,6 +15,8 @@ class ConformalPredictor():  # By default a Mondrian CP, for now
 		self.y_test_proba = y_test_proba
 		self.y_test = y_test
 		self.labels = labels
+		self.alphas = np.zeros(len(y_cal))  # nonconformity scores for calibration set
+		self.ranks = np.zeros((len(y_test), len(labels)))
 		self.p_values = np.zeros((len(y_test), len(labels)))
 		self.mondrian = mondrian
 
@@ -23,20 +25,24 @@ class ConformalPredictor():  # By default a Mondrian CP, for now
 			for l in self.labels:
 				ncm_cal = ncf_measure(self.y_cal_proba, self.y_cal)
 				ncm_cal = ncm_cal[self.y_cal == l]
+				self.alphas = ncm_cal
 				array_of_trues = np.full(len(self.y_test), l)  # Trick: run ncf_measure over *all* the test examples
 				ncm_test = ncf_measure(self.y_test_proba, array_of_trues)
 				sorted_alpha_cal = np.sort(ncm_cal)
-				ranks = np.searchsorted(sorted_alpha_cal, ncm_test)
-				p_value = (len(ncm_cal) - ranks + 1) / (len(ncm_cal) + 1)
+				ranks = len(ncm_cal) - np.searchsorted(sorted_alpha_cal, ncm_test) + 1
+				self.ranks[:, int(l)] = ranks
+				p_value = ranks / (len(ncm_cal) + 1)
 				self.p_values[:, int(l)] = p_value
 		else:
 			ncm_cal = ncf_measure(self.y_cal_proba, self.y_cal)
+			self.alphas = ncm_cal
 			for l in self.labels:
 				array_of_trues = np.full(len(self.y_test), l)
 				ncm_test = ncf_measure(self.y_test_proba, array_of_trues)
 				sorted_alpha_cal = np.sort(ncm_cal)
-				ranks = np.searchsorted(sorted_alpha_cal, ncm_test)
-				p_value = (len(ncm_cal) - ranks + 1) / (len(ncm_cal) + 1)
+				ranks = len(ncm_cal) - np.searchsorted(sorted_alpha_cal, ncm_test) + 1
+				self.ranks[:, int(l)] = ranks
+				p_value = ranks / (len(ncm_cal) + 1)
 				self.p_values[:, int(l)] = p_value
 
 
