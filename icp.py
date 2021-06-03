@@ -51,7 +51,7 @@ class ConformalPredictor():
 		print(classification_report(self.y_test, y_hat_test, digits=digits))
 
 	def s_criterion(self):
-		return np.average(self.p_values[:2])
+		return np.average(self.p_values)
 
 	def average_false_pvalue(self):
 		y_test_false = np.logical_not(self.y_test).astype(int)
