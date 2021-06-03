@@ -50,6 +50,9 @@ class ConformalPredictor():
 		y_hat_test = np.argmax(self.p_values, axis=1)
 		print(classification_report(self.y_test, y_hat_test, digits=digits))
 
+	def s_criterion(self):
+		return np.average(self.p_values[:2])
+
 	def average_false_pvalue(self):
 		y_test_false = np.logical_not(self.y_test).astype(int)
 		false_p_values = np.take_along_axis(self.p_values, y_test_false[:, None], axis=1)
