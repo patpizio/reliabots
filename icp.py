@@ -2,14 +2,14 @@ import numpy as np
 from sklearn.metrics import classification_report
 import plotly.express as px
 import plotly.graph_objects as go
-import matplotlib.pyplot as plt
-import seaborn as sns
+# import matplotlib.pyplot as plt
+# import seaborn as sns
 import pandas as pd
 
 
 class ConformalPredictor():
 
-	def __init__(self, y_cal_proba, y_cal, y_test_proba, y_test, labels, mondrian=True):
+	def __init__(self, y_cal_proba, y_cal, y_test_proba, y_test, labels, smoothed=False, mondrian=True):
 		self.y_cal_proba = y_cal_proba
 		self.y_cal = y_cal
 		self.y_test_proba = y_test_proba
@@ -18,6 +18,7 @@ class ConformalPredictor():
 		self.alphas = np.zeros(len(y_cal))  # nonconformity scores for calibration set
 		self.ranks = np.zeros((len(y_test), len(labels)))
 		self.p_values = np.zeros((len(y_test), len(labels)))
+		self.smoothed = smoothed
 		self.mondrian = mondrian
 
 	def fit(self, ncf_measure):
@@ -28,8 +29,9 @@ class ConformalPredictor():
 				self.alphas = ncm_cal
 				array_of_trues = np.full(len(self.y_test), l)  # Trick: run ncf_measure over *all* the test examples
 				ncm_test = ncf_measure(self.y_test_proba, array_of_trues)
-				sorted_alpha_cal = np.sort(ncm_cal)
-				ranks = len(ncm_cal) - np.searchsorted(sorted_alpha_cal, ncm_test) + 1
+				# sorted_alpha_cal = np.sort(ncm_cal)
+				# ranks = len(ncm_cal) - np.searchsorted(sorted_alpha_cal, ncm_test) + 1
+				ranks = self.compute_ranks(ncm_test)
 				self.ranks[:, int(l)] = ranks
 				p_value = ranks / (len(ncm_cal) + 1)
 				self.p_values[:, int(l)] = p_value
@@ -39,24 +41,50 @@ class ConformalPredictor():
 			for l in self.labels:
 				array_of_trues = np.full(len(self.y_test), l)
 				ncm_test = ncf_measure(self.y_test_proba, array_of_trues)
-				sorted_alpha_cal = np.sort(ncm_cal)
-				ranks = len(ncm_cal) - np.searchsorted(sorted_alpha_cal, ncm_test) + 1
+				# sorted_alpha_cal = np.sort(ncm_cal)
+				# ranks = len(ncm_cal) - np.searchsorted(sorted_alpha_cal, ncm_test) + 1
+				ranks = self.compute_ranks(ncm_test)
 				self.ranks[:, int(l)] = ranks
 				p_value = ranks / (len(ncm_cal) + 1)
 				self.p_values[:, int(l)] = p_value
 
+	def compute_ranks(self, ncm_test):
+		sorted_alpha_cal = np.sort(self.alphas)
+		greater_alphas = np.searchsorted(sorted_alpha_cal, ncm_test, side='right')
+		geq_alphas = np.searchsorted(sorted_alpha_cal, ncm_test, side='left')
+		if self.smoothed:
+			ties = np.searchsorted(sorted_alpha_cal, ncm_test, side='right') - greater_alphas
+			random_ties = ties * np.random.uniform(size=len(ties))  # --------------------------CHECK DEFINITION OF SMOOTHED PVALUE!
+			ranks = len(self.alphas) - greater_alphas + random_ties
+		else:
+			ranks = len(self.alphas) - geq_alphas + 1
+		return ranks
+
+	def predict(self, epsilon):
+		return self.p_values >= epsilon
 
 	def point_prediction_performance(self, digits=2):
 		y_hat_test = np.argmax(self.p_values, axis=1)
 		print(classification_report(self.y_test, y_hat_test, digits=digits))
 
-	def s_criterion(self):
+	def s_criterion(self):	
 		return np.average(self.p_values)
 
 	def of_criterion(self):
 		y_test_false = np.logical_not(self.y_test).astype(int)
 		false_p_values = np.take_along_axis(self.p_values, y_test_false[:, None], axis=1)
 		return np.average(false_p_values)
+
+	def n_criterion(self):
+		sig_levels = []
+		avg_sizes = []
+		for i in range(0, 101, 1):
+			eps = i/100
+			sig_levels.append(eps)
+			regions = self.p_values > eps
+			region_size = np.sum(regions, axis=1)
+			avg_sizes.append(np.sum(region_size) / len(self.y_test))
+		return pd.DataFrame({'significance':sig_levels, 'prediction size':avg_sizes}) 
 
 	def top_high_confidence(self, n=10):
 		second_largest = np.sort(self.p_values, axis=1)[:, -2]
@@ -131,39 +159,39 @@ class ConformalPredictor():
 
 
 
-	def old_plot_validity(self):
-		error_rates = []
-		significance = []
-		sizes = []
-		empties = []
-		for i in range(0, 101, 2):
-			eps = i/100
-			significance.append(eps)
-			regions = self.p_values > eps
-			no_true_included = np.invert(np.take_along_axis(regions, self.y_test[:, None], axis=1))
-			error_rate = np.sum(no_true_included) / len(self.y_test)
-			error_rates.append(error_rate)
-			region_size = np.sum(regions, axis=1)
-			sizes.append(np.sum(region_size) / len(self.y_test))
-			empties.append(np.sum(region_size == 0) / len(self.y_test))
+	# def old_plot_validity(self):
+	# 	error_rates = []
+	# 	significance = []
+	# 	sizes = []
+	# 	empties = []
+	# 	for i in range(0, 101, 2):
+	# 		eps = i/100
+	# 		significance.append(eps)
+	# 		regions = self.p_values > eps
+	# 		no_true_included = np.invert(np.take_along_axis(regions, self.y_test[:, None], axis=1))
+	# 		error_rate = np.sum(no_true_included) / len(self.y_test)
+	# 		error_rates.append(error_rate)
+	# 		region_size = np.sum(regions, axis=1)
+	# 		sizes.append(np.sum(region_size) / len(self.y_test))
+	# 		empties.append(np.sum(region_size == 0) / len(self.y_test))
 
-		fig, axs = plt.subplots(3, sharex=True, figsize=(5,10))
+	# 	fig, axs = plt.subplots(3, sharex=True, figsize=(5,10))
 
-		axs[0].plot(significance, significance, color='lightgray', linestyle='dashed')
-		axs[0].plot(significance, error_rates)
-		# ax[0].xlabel('Confidence')
-		# ax[0].ylabel('Error rate')
-		axs[0].legend(['Theoretical', 'Actual error rate'])
-		# ax[0].rcParams.update({'font.size': 12})
+	# 	axs[0].plot(significance, significance, color='lightgray', linestyle='dashed')
+	# 	axs[0].plot(significance, error_rates)
+	# 	# ax[0].xlabel('Confidence')
+	# 	# ax[0].ylabel('Error rate')
+	# 	axs[0].legend(['Theoretical', 'Actual error rate'])
+	# 	# ax[0].rcParams.update({'font.size': 12})
 
-		axs[1].plot(significance, sizes)
-		axs[1].legend(['Average prediction size'])
-		axs[2].plot(significance, empties)
-		axs[2].legend(['Empty predictions'])
+	# 	axs[1].plot(significance, sizes)
+	# 	axs[1].legend(['Average prediction size'])
+	# 	axs[2].plot(significance, empties)
+	# 	axs[2].legend(['Empty predictions'])
 
-		for ax in axs.flat:
-			ax.grid(b=True, color='#999999', linestyle='-', alpha=0.2)
+	# 	for ax in axs.flat:
+	# 		ax.grid(b=True, color='#999999', linestyle='-', alpha=0.2)
 
-		axs[2].set(xlabel='significance level')
+	# 	axs[2].set(xlabel='significance level')
 
 
