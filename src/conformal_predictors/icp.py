@@ -9,15 +9,15 @@ import pandas as pd
 
 class ConformalPredictor():
 
-	def __init__(self, y_cal_proba, y_cal, y_test_proba, y_test, labels, smoothed=False, mondrian=True):
+	def __init__(self, y_cal_proba, y_cal, y_test_proba, y_test, smoothed=False, mondrian=True):
 		self.y_cal_proba = y_cal_proba
 		self.y_cal = y_cal
 		self.y_test_proba = y_test_proba
 		self.y_test = y_test
-		self.labels = labels
+		self.labels = [i for i in range(y_cal_proba.shape[1])]
 		self.alphas = np.zeros(len(y_cal))  # nonconformity scores for calibration set
-		self.ranks = np.zeros((len(y_test), len(labels)))
-		self.p_values = np.zeros((len(y_test), len(labels)))
+		self.ranks = np.zeros((len(y_test), len(self.labels)))
+		self.p_values = np.zeros((len(y_test), len(self.labels)))
 		self.smoothed = smoothed
 		self.mondrian = mondrian
 
