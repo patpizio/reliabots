@@ -53,11 +53,12 @@ class ConformalPredictor():
 		greater_alphas = np.searchsorted(sorted_alpha_cal, ncm_test, side='right')
 		geq_alphas = np.searchsorted(sorted_alpha_cal, ncm_test, side='left')
 		if self.smoothed:
-			ties = np.searchsorted(sorted_alpha_cal, ncm_test, side='right') - greater_alphas
-			random_ties = ties * np.random.uniform(size=len(ties))  # --------------------------CHECK DEFINITION OF SMOOTHED PVALUE!
-			ranks = len(self.alphas) - greater_alphas + random_ties
+			ties = geq_alphas - greater_alphas
+			random_ties = ties * np.random.uniform(0, 1, len(ties))  # Element by element
+
+			ranks = len(self.alphas) + 1 - greater_alphas - random_ties
 		else:
-			ranks = len(self.alphas) - geq_alphas + 1
+			ranks = len(self.alphas) + 1 - geq_alphas
 		return ranks
 
 	def predict(self, epsilon):
