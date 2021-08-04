@@ -71,6 +71,9 @@ class ConformalPredictor():
 	def s_criterion(self):	
 		return np.average(self.p_values)
 
+	# TODO URGENT: Check when number of labels > 2
+	# The average false p-value: the average of the p-values for *ALL*
+	# postulated labels in the test set except for the true labels.
 	def of_criterion(self):
 		y_test_false = np.logical_not(self.y_test).astype(int)
 		false_p_values = np.take_along_axis(self.p_values, y_test_false[:, None], axis=1)
