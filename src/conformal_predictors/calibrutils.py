@@ -4,7 +4,7 @@ import plotly.express as px
 from sklearn.metrics import log_loss, brier_score_loss
 
 
-def reliabubble_plot(scores, y_test, num_bins=10, title=None):
+def reliabubble_plot(scores, y_test, num_bins=10, size_max=20, font_size=12, title=None):
 	# Create 10 bins (n. 1 to n. 10) such that 0.0 and 1.0 values are included
 	# Bin n. 0 would get values < 0.0 (it shouldn't happen).
 	bins = np.linspace(0, 1 + 1e-8, num=num_bins + 1)  
@@ -30,7 +30,9 @@ def reliabubble_plot(scores, y_test, num_bins=10, title=None):
 			'x':'probability',
 			'y':'accuracy'
 		},
-		title = title)
+		title = title,
+		size_max = size_max)
+	fig.update_layout(font_size=font_size)
 	fig.add_trace(
 		go.Scatter(x=bins,
 			y=bins,
