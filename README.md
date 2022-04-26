@@ -1,10 +1,10 @@
-# reliabots
+# reliabots (work in progress)
  
-Work in progress.
+Make your machine learning model more reliable with conformal prediction!
 
 Install with
 ```
-pip install --index-url https://test.pypi.org/simple/ --no-deps conformal_predictors-patpizio
+pip install reliabots
 ```
 The Conformal Prediction framework is described in a book by [Vovk et al. (2005)](http://alrw.net). 
 
