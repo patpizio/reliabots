@@ -9,6 +9,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 
+# ideally:
+class CrossConformalPredictor():
+	def __init__(self, X_train, y_train, X_val, y_val, X_test, y_test, train_func, pred_func, n_folds, mondrian=False):
+		pass
 
 class CrossConformalPredictor():
 

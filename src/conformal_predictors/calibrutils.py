@@ -22,9 +22,12 @@ def reliabubble_plot(scores, y_test, num_bins=10, title=None):
 	confidence = np.zeros(len(bins))
 	confidence = np.divide(score_sum_per_bin, counts, where=counts!=0)
 
+    # 2 equally large bubbles on 2 different plots may reflect different numbers
+    # this is due to plotly using relative frequencies to determine the bubble size (understandably)
+    # how can we link two graphs' relative  frequencies so that it's easy to compare them? facets?
 	fig = px.scatter(x=confidence, y=accuracy, size=counts, width=700, height=500,
 		labels={
-			'x':'confidence',
+			'x':'probability',
 			'y':'accuracy'
 		},
 		title = title)

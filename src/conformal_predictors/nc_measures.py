@@ -19,10 +19,15 @@ def logit_ratio(y_proba, y):
 
 def margin_error_func(y_proba, y):  # y is:  i) true y_cal  and  ii) y_test candidate
     prob_true = y_proba[np.arange(len(y_proba)), y]
-    print(prob_true)
+    # print(prob_true)
     y_probba = y_proba.copy()
     np.put_along_axis(y_probba, y[:, None], -np.inf, axis=1)  # "exclude" probs of true labels
-    print(f'y_probba now: \n{y_probba}')
+    # print(f'y_probba now: \n{y_probba}')
     max_among_false = np.max(y_probba, axis=1)
-    print(f'Max among false: \n{max_among_false}')
+    # print(f'Max among false: \n{max_among_false}')
     return 0.5 - ((prob_true - max_among_false) / 2)
+
+# score is the max difference between true label and softmax prediction
+def l_infinity(y_proba, y):
+    pass
+
