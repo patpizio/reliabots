@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.metrics import classification_report
 from sklearn.isotonic import IsotonicRegression
 from .VennABERS import ScoresToMultiProbs
-from .calibrutils import reliabubble_plot, calibration_errors
+from .calibrutils import reliabubble, calibration_errors
 from scipy.special import softmax
 
 
@@ -40,15 +40,15 @@ class IVAP:
 	def compute_calibration_errors(self, num_bins=10):
 		return calibration_errors(self.p_single, self.y_test, num_bins)
 
-	def plot_reliabubble(self, num_bins=10, title=None):
-		return reliabubble_plot(self.p_single, self.y_test, num_bins, title=title)
+	def plot_reliabubble(self, num_bins=10, size_max=20, font_size=12, title=None):
+		return reliabubble(self.p_single, self.y_test, num_bins, size_max, font_size, title=title)
 
 	def compare_with_isotonic_regression(self, num_bins=10):
 		iso_reg = IsotonicRegression(out_of_bounds='clip').fit(self.y_cal_scores, self.y_cal)
 		y_test_iso = iso_reg.predict(self.y_test_scores)
 		print('Comparison with direct isotonic regression:')
 		print(calibration_errors(y_test_iso, self.y_test, num_bins, include_log_loss=False))
-		return reliabubble_plot(y_test_iso, self.y_test, num_bins, title='Isotonic Regression')
+		return reliabubble(y_test_iso, self.y_test, num_bins, title='Isotonic Regression')
 
 
 			
